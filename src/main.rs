@@ -8,9 +8,13 @@ extern crate standard_error;
 use docopt::Docopt;
 use standard_error::StandardResult as Result;
 use std::rc::Rc;
-use std::borrow::Cow;
 
 mod git;
+mod author;
+mod config;
+
+use author::Author;
+use config::Config;
 
 static CFG: git::Config = git::Config::File("./partners.cfg");
 
@@ -26,30 +30,6 @@ Usage: partners info
 Options:
     -a, --archive  Copy everything.
 ";
-
-#[derive(Debug)]
-struct Config {
-  domain: String,
-  prefix: String,
-  separator: String,
-}
-
-#[derive(Debug)]
-struct Author {
-  config: Rc<Config>,
-  nick: String,
-  name: String,
-  email: Option<String>,
-}
-
-impl Author {
-  fn get_email(&self) -> std::string::CowString {
-    match self.email {
-      Some(ref email) => Cow::Borrowed(email.as_slice()),
-      None => Cow::Owned(format!("{}@{}", self.nick, self.config.domain)),
-    }
-  }
-}
 
 fn print_author_list(list: &[Author]) {
   for item in list.iter() {
