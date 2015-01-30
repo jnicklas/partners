@@ -28,5 +28,5 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "standard_error"
 version = "0.0.1"
-source = "git+https://github.com/jnicklas/standard_error.git#6d42c4b061586730d265f36f78fc6cc8f578fef0"
+source = "git+https://github.com/jnicklas/standard_error.git#287888b96ac1ba9fad015d0d9ab26632ce3c1370"
 
