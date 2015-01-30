@@ -9,6 +9,7 @@ extern crate standard_error;
 use docopt::Docopt;
 use standard_error::StandardResult as Result;
 use std::rc::Rc;
+use std::borrow::Cow;
 
 mod config;
 
@@ -18,7 +19,7 @@ static CONFIG_PATH: &'static str = "./partners.cfg";
 static USAGE: &'static str = "
 Usage: partners info
        partners list
-       partners add --name=<name> --nick=<nick> [--email=<email>]
+       partners add --nick=<nick> --name=<name> [--email=<email>]
        partners add
 
 Options:
@@ -37,14 +38,23 @@ struct Author {
   config: Rc<Config>,
   nick: String,
   name: String,
-  email: String,
+  email: Option<String>,
+}
+
+impl Author {
+  fn get_email(&self) -> std::string::CowString {
+    match self.email {
+      Some(ref email) => Cow::Borrowed(email.as_slice()),
+      None => Cow::Owned(format!("{}@{}", self.nick, self.config.domain)),
+    }
+  }
 }
 
 fn print_author_list(list: &[Author]) {
   for item in list.iter() {
     println!("{}:", item.nick);
     println!("  Name:  {}", item.name);
-    println!("  Email: {}", item.email);
+    println!("  Email: {}", item.get_email());
   }
 }
 
@@ -52,10 +62,7 @@ fn parse_author_line(config: &Rc<Config>, line: &str) -> Result<Author> {
   let mut parts = line.splitn(1, ' ');
   let nick = parts.next().unwrap().split('.').nth(1).unwrap().to_string();
   let name = parts.next().unwrap().to_string();
-  let email = match config::get(&format!("author.{}.email", nick)[]) {
-    Ok(email) => email,
-    Err(_) => format!("{}@{}", nick, try!(config::get("config.domain")))
-  };
+  let email = config::get(&format!("author.{}.email", nick)[]).ok();
 
   Ok(Author { config: config.clone(), nick: nick, name: name, email: email })
 }
@@ -67,7 +74,9 @@ fn get_authors(config: &Rc<Config>) -> Result<Vec<Author>> {
 
 fn write_author(author: &Author) -> Result<()> {
   try!(config::set(&*format!("author.{}.name", author.nick), &*author.name));
-  try!(config::set(&*format!("author.{}.email", author.nick), &*author.email));
+  if let Some(ref email) = author.email {
+    try!(config::set(&*format!("author.{}.email", author.nick), &**email));
+  }
   Ok(())
 }
 
@@ -84,11 +93,15 @@ fn main() {
     let authors = get_authors(&config).unwrap();
     print_author_list(&authors[]);
   } else if args.get_bool("add") {
+    let email = args.get_str("--email").to_string();
+
+    let email = if email.is_empty() { None } else { Some(email) };
+
     let author = Author {
       config: config.clone(),
       nick: args.get_str("--nick").to_string(),
       name: args.get_str("--name").to_string(),
-      email: args.get_str("--email").to_string(),
+      email: email,
     };
     write_author(&author).unwrap();
   }
