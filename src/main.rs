@@ -93,16 +93,13 @@ fn main() {
     let authors = get_authors(&config).unwrap();
     print_author_list(&authors[]);
   } else if args.get_bool("add") {
-    let email = args.get_str("--email").to_string();
+    let email = args.get_str("--email");
+    let nick = args.get_str("--nick");
+    let name = args.get_str("--name");
 
-    let email = if email.is_empty() { None } else { Some(email) };
+    let email = if email.is_empty() { None } else { Some(email.to_string()) };
 
-    let author = Author {
-      config: config.clone(),
-      nick: args.get_str("--nick").to_string(),
-      name: args.get_str("--name").to_string(),
-      email: email,
-    };
+    let author = Author { config: config.clone(), nick: nick.to_string(), name: name.to_string(), email: email };
     write_author(&author).unwrap();
   }
 }
