@@ -1,25 +1,25 @@
 use standard_error::StandardResult as Result;
 use std::old_io::process::Command;
 
-pub enum ConfigType {
+pub enum Config {
   File(&'static str),
   Global,
   None,
 }
 
-impl ConfigType {
+impl Config {
   fn command(&self) -> Command {
     let mut command = Command::new("git");
     let mut command = command.arg("config");
     match *self {
-      ConfigType::File(path) => command.arg("-f").arg(path).clone(),
-      ConfigType::Global => command.arg("--global").clone(),
-      ConfigType::None => command.clone()
+      Config::File(path) => command.arg("-f").arg(path).clone(),
+      Config::Global => command.arg("--global").clone(),
+      Config::None => command.clone()
     }
   }
 }
 
-pub fn get(config: &ConfigType, key: &str) -> Result<String> {
+pub fn get(config: &Config, key: &str) -> Result<String> {
   let mut process = try!(config.command().arg(key).spawn());
 
   let result = try!(process.wait());
@@ -33,7 +33,7 @@ pub fn get(config: &ConfigType, key: &str) -> Result<String> {
   }
 }
 
-pub fn set(config: &ConfigType, key: &str, value: &str) -> Result<()> {
+pub fn set(config: &Config, key: &str, value: &str) -> Result<()> {
   let mut process = try!(config.command().arg(key).arg(value).spawn());
 
   let result = try!(process.wait());
@@ -45,7 +45,7 @@ pub fn set(config: &ConfigType, key: &str, value: &str) -> Result<()> {
   }
 }
 
-pub fn list(config: &ConfigType, keyexp: &str) -> Result<Vec<String>> {
+pub fn list(config: &Config, keyexp: &str) -> Result<Vec<String>> {
   let mut process = try!(config.command().arg("--get-regexp").arg(keyexp).spawn());
 
   let result = try!(process.wait());

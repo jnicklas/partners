@@ -12,7 +12,7 @@ use std::borrow::Cow;
 
 mod git;
 
-static CFG: git::ConfigType = git::ConfigType::File("./partners.cfg");
+static CFG: git::Config = git::Config::File("./partners.cfg");
 
 // Write the Docopt usage string.
 static USAGE: &'static str = "
@@ -82,8 +82,8 @@ fn write_author(author: &Author) -> Result<()> {
 }
 
 fn print_current() {
-  println!("Name:  {}", git::get(&git::ConfigType::None, "user.name").unwrap());
-  println!("Email: {}", git::get(&git::ConfigType::None, "user.email").unwrap());
+  println!("Name:  {}", git::get(&git::Config::None, "user.name").unwrap());
+  println!("Email: {}", git::get(&git::Config::None, "user.email").unwrap());
 }
 
 fn main() {
@@ -114,9 +114,9 @@ fn main() {
 
     match get_authors(&config).unwrap().iter().find(|a| a.nick == nick) {
       Some(author) => {
-        git::set(&git::ConfigType::Global, "partners.current", &*author.nick).unwrap();
-        git::set(&git::ConfigType::Global, "user.name", &*author.name).unwrap();
-        git::set(&git::ConfigType::Global, "user.email", &*author.get_email()).unwrap();
+        git::set(&git::Config::Global, "partners.current", &*author.nick).unwrap();
+        git::set(&git::Config::Global, "user.name", &*author.name).unwrap();
+        git::set(&git::Config::Global, "user.email", &*author.get_email()).unwrap();
         print_current();
       }
       None => {
