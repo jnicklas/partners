@@ -17,45 +17,45 @@ impl Config {
       Config::None => command.clone()
     }
   }
-}
 
-pub fn get(config: &Config, key: &str) -> Result<String> {
-  let mut process = try!(config.command().arg(key).spawn());
+  pub fn get(&self, key: &str) -> Result<String> {
+    let mut process = try!(self.command().arg(key).spawn());
 
-  let result = try!(process.wait());
+    let result = try!(process.wait());
 
-  if result.success() {
+    if result.success() {
+      let output = try!(process.stdout.as_mut().unwrap().read_to_end());
+      let string = try!(String::from_utf8(output));
+      Ok(string.trim().to_string())
+    } else {
+      fail!(try!(String::from_utf8(try!(process.stderr.as_mut().unwrap().read_to_end()))));
+    }
+  }
+
+  pub fn set(&self, key: &str, value: &str) -> Result<()> {
+    let mut process = try!(self.command().arg(key).arg(value).spawn());
+
+    let result = try!(process.wait());
+
+    if result.success() {
+      Ok(())
+    } else {
+      fail!(try!(String::from_utf8(try!(process.stderr.as_mut().unwrap().read_to_end()))));
+    }
+  }
+
+  pub fn list(&self, keyexp: &str) -> Result<Vec<String>> {
+    let mut process = try!(self.command().arg("--get-regexp").arg(keyexp).spawn());
+
+    let result = try!(process.wait());
+
+    if !result.success() {
+      fail!(try!(String::from_utf8(try!(process.stderr.as_mut().unwrap().read_to_end()))));
+    }
+
     let output = try!(process.stdout.as_mut().unwrap().read_to_end());
-    let string = try!(String::from_utf8(output));
-    Ok(string.trim().to_string())
-  } else {
-    fail!(format!("config not found! {}", key));
+    let string = String::from_utf8(output).unwrap();
+
+    Ok(string.trim().split('\n').map(ToString::to_string).collect())
   }
-}
-
-pub fn set(config: &Config, key: &str, value: &str) -> Result<()> {
-  let mut process = try!(config.command().arg(key).arg(value).spawn());
-
-  let result = try!(process.wait());
-
-  if result.success() {
-    Ok(())
-  } else {
-    fail!(try!(String::from_utf8(try!(process.stderr.as_mut().unwrap().read_to_end()))));
-  }
-}
-
-pub fn list(config: &Config, keyexp: &str) -> Result<Vec<String>> {
-  let mut process = try!(config.command().arg("--get-regexp").arg(keyexp).spawn());
-
-  let result = try!(process.wait());
-
-  if !result.success() {
-    fail!("unable to list config");
-  }
-
-  let output = try!(process.stdout.as_mut().unwrap().read_to_end());
-  let string = String::from_utf8(output).unwrap();
-
-  Ok(string.trim().split('\n').map(ToString::to_string).collect())
 }
