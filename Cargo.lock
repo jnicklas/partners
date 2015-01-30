@@ -3,6 +3,7 @@ name = "partners"
 version = "0.0.1"
 dependencies = [
  "docopt 0.6.32 (registry+https://github.com/rust-lang/crates.io-index)",
+ "standard_error 0.0.1 (git+https://github.com/jnicklas/standard_error.git)",
 ]
 
 [[package]]
@@ -23,4 +24,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "rustc-serialize"
 version = "0.2.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "standard_error"
+version = "0.0.1"
+source = "git+https://github.com/jnicklas/standard_error.git#6d42c4b061586730d265f36f78fc6cc8f578fef0"
 

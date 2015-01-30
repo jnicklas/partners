@@ -6,3 +6,6 @@ authors = ["Jonas Nicklas <jonas.nicklas@gmail.com>"]
 
 [dependencies]
 docopt = "*"
+
+[dependencies.standard_error]
+git = "https://github.com/jnicklas/standard_error.git"
