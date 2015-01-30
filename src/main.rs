@@ -123,8 +123,5 @@ fn main() {
         println!("no such author");
       }
     }
-
-    // println!("Name:  {}", config::get(&config::ConfigType::None, "user.name").unwrap());
-    // println!("Email: {}", config::get(&config::ConfigType::None, "user.email").unwrap());
   }
 }
