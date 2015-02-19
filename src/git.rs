@@ -1,5 +1,5 @@
 use standard_error::StandardResult as Result;
-use std::old_io::process::Command;
+use std::process::{Command};
 
 pub enum Config {
   File(&'static str),
@@ -7,55 +7,48 @@ pub enum Config {
   None,
 }
 
+fn read_result(command: &mut Command) -> Result<String> {
+    let result = try!(command.output());
+
+    if result.status.success() {
+        let string = try!(String::from_utf8(result.stdout), "binary response");
+        Ok(string.trim().to_string())
+    } else {
+        let string = try!(String::from_utf8(result.stderr), "binary response");
+        fail!(string)
+    }
+}
+
 impl Config {
   fn command(&self) -> Command {
     let mut command = Command::new("git");
-    let mut command = command.arg("config");
     match *self {
-      Config::File(path) => command.arg("-f").arg(path).clone(),
-      Config::Global => command.arg("--global").clone(),
-      Config::None => command.clone()
-    }
+      Config::File(path) => command.arg("config").arg("-f").arg(path),
+      Config::Global => command.arg("config").arg("--global"),
+      Config::None => command.arg("config")
+    };
+    command
   }
 
   pub fn get(&self, key: &str) -> Result<String> {
-    let mut process = try!(self.command().arg(key).spawn());
+    let mut command = self.command();
 
-    let result = try!(process.wait());
-
-    if result.success() {
-      let output = try!(process.stdout.as_mut().unwrap().read_to_end());
-      let string = try!(String::from_utf8(output));
-      Ok(string.trim().to_string())
-    } else {
-      fail!(try!(String::from_utf8(try!(process.stderr.as_mut().unwrap().read_to_end()))));
-    }
+    read_result(command.arg(key))
   }
 
   pub fn set(&self, key: &str, value: &str) -> Result<()> {
-    let mut process = try!(self.command().arg(key).arg(value).spawn());
+    let mut command = self.command();
 
-    let result = try!(process.wait());
+    try!(read_result(command.arg(key).arg(value)));
 
-    if result.success() {
-      Ok(())
-    } else {
-      fail!(try!(String::from_utf8(try!(process.stderr.as_mut().unwrap().read_to_end()))));
-    }
+    Ok(())
   }
 
   pub fn list(&self, keyexp: &str) -> Result<Vec<String>> {
-    let mut process = try!(self.command().arg("--get-regexp").arg(keyexp).spawn());
+    let mut command = self.command();
 
-    let result = try!(process.wait());
+    let string = try!(read_result(command.arg("--get-regexp").arg(keyexp)));
 
-    if !result.success() {
-      fail!(try!(String::from_utf8(try!(process.stderr.as_mut().unwrap().read_to_end()))));
-    }
-
-    let output = try!(process.stdout.as_mut().unwrap().read_to_end());
-    let string = String::from_utf8(output).unwrap();
-
-    Ok(string.trim().split('\n').map(ToString::to_string).collect())
+    Ok(string.split('\n').map(ToString::to_string).collect())
   }
 }

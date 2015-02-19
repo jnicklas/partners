@@ -1,7 +1,8 @@
-#![feature(io)]
-#![feature(collections)]
 #![feature(core)]
+#![feature(process)]
+
 extern crate docopt;
+
 #[macro_use]
 extern crate standard_error;
 
@@ -62,6 +63,7 @@ fn write_author(author: &Author) -> Result<()> {
 }
 
 fn print_current() {
+  println!("Nick:  {}", git::Config::None.get("partners.current").unwrap());
   println!("Name:  {}", git::Config::None.get("user.name").unwrap());
   println!("Email: {}", git::Config::None.get("user.email").unwrap());
 }
