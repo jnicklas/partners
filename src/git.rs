@@ -2,9 +2,9 @@ use standard_error::StandardResult as Result;
 use std::process::{Command};
 
 pub enum Config {
-  File(&'static str),
-  Global,
-  None,
+    File(&'static str),
+    Global,
+    None,
 }
 
 fn read_result(command: &mut Command) -> Result<String> {
@@ -20,35 +20,35 @@ fn read_result(command: &mut Command) -> Result<String> {
 }
 
 impl Config {
-  fn command(&self) -> Command {
-    let mut command = Command::new("git");
-    match *self {
-      Config::File(path) => command.arg("config").arg("-f").arg(path),
-      Config::Global => command.arg("config").arg("--global"),
-      Config::None => command.arg("config")
-    };
-    command
-  }
+    fn command(&self) -> Command {
+        let mut command = Command::new("git");
+        match *self {
+            Config::File(path) => command.arg("config").arg("-f").arg(path),
+            Config::Global => command.arg("config").arg("--global"),
+            Config::None => command.arg("config")
+        };
+        command
+    }
 
-  pub fn get(&self, key: &str) -> Result<String> {
-    let mut command = self.command();
+    pub fn get(&self, key: &str) -> Result<String> {
+        let mut command = self.command();
 
-    read_result(command.arg(key))
-  }
+        read_result(command.arg(key))
+    }
 
-  pub fn set(&self, key: &str, value: &str) -> Result<()> {
-    let mut command = self.command();
+    pub fn set(&self, key: &str, value: &str) -> Result<()> {
+        let mut command = self.command();
 
-    try!(read_result(command.arg(key).arg(value)));
+        try!(read_result(command.arg(key).arg(value)));
 
-    Ok(())
-  }
+        Ok(())
+    }
 
-  pub fn list(&self, keyexp: &str) -> Result<Vec<String>> {
-    let mut command = self.command();
+    pub fn list(&self, keyexp: &str) -> Result<Vec<String>> {
+        let mut command = self.command();
 
-    let string = try!(read_result(command.arg("--get-regexp").arg(keyexp)));
+        let string = try!(read_result(command.arg("--get-regexp").arg(keyexp)));
 
-    Ok(string.split('\n').map(ToString::to_string).collect())
-  }
+        Ok(string.split('\n').map(ToString::to_string).collect())
+    }
 }
