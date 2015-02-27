@@ -1,6 +1,5 @@
 use config::Config;
 use std::borrow::Cow;
-use std::string::CowString;
 use std::rc::Rc;
 
 #[derive(Debug)]
@@ -12,9 +11,9 @@ pub struct Author {
 }
 
 impl Author {
-    pub fn get_email(&self) -> CowString {
+    pub fn get_email(&self) -> Cow<str> {
         match self.email {
-            Some(ref email) => Cow::Borrowed(email.as_slice()),
+            Some(ref email) => Cow::Borrowed(&email),
             None => Cow::Owned(format!("{}@{}", self.nick, self.config.domain)),
         }
     }

@@ -1,4 +1,3 @@
-#![feature(core)]
 #![feature(process)]
 
 extern crate docopt;
@@ -45,20 +44,20 @@ fn parse_author_line(config: &Rc<Config>, line: &str) -> Result<Author> {
     let mut parts = line.splitn(1, ' ');
     let nick = parts.next().unwrap().split('.').nth(1).unwrap().to_string();
     let name = parts.next().unwrap().to_string();
-    let email = CFG.get(&format!("author.{}.email", nick)[]).ok();
+    let email = CFG.get(&format!("author.{}.email", nick)).ok();
 
     Ok(Author { config: config.clone(), nick: nick, name: name, email: email })
 }
 
 fn get_authors(config: &Rc<Config>) -> Result<Vec<Author>> {
     let lines = try!(CFG.list("author.\\w+.name"));
-    lines.iter().map(|line| parse_author_line(config, &line[])).collect()
+    lines.iter().map(|line| parse_author_line(config, &line)).collect()
 }
 
 fn write_author(author: &Author) -> Result<()> {
-    try!(CFG.set(&*format!("author.{}.name", author.nick), &*author.name));
+    try!(CFG.set(&format!("author.{}.name", author.nick), &*author.name));
     if let Some(ref email) = author.email {
-        try!(CFG.set(&*format!("author.{}.email", author.nick), &**email));
+        try!(CFG.set(&format!("author.{}.email", author.nick), &**email));
     }
     Ok(())
 }
@@ -80,7 +79,7 @@ fn main() {
 
     if args.get_bool("list") {
         let authors = get_authors(&config).unwrap();
-        print_author_list(&authors[]);
+        print_author_list(&authors);
     } else if args.get_bool("add") {
         let email = args.get_str("--email");
         let nick = args.get_str("--nick");
