@@ -56,9 +56,9 @@ fn get_authors(config: &Rc<Config>) -> Result<Vec<Author>> {
 }
 
 fn write_author(author: &Author) -> Result<()> {
-    try!(CFG.set(&format!("author.{}.name", author.nick), &*author.name));
+    try!(CFG.set(&format!("author.{}.name", author.nick), &author.name));
     if let Some(ref email) = author.email {
-        try!(CFG.set(&format!("author.{}.email", author.nick), &**email));
+        try!(CFG.set(&format!("author.{}.email", author.nick), &email));
     }
     Ok(())
 }
@@ -104,9 +104,9 @@ fn main() {
 
         match get_authors(&config).unwrap().iter().find(|a| a.nick == nick) {
             Some(author) => {
-                git::Config::Global.set("partners.current", &*author.nick).unwrap();
-                git::Config::Global.set("user.name", &*author.name).unwrap();
-                git::Config::Global.set("user.email", &*author.get_email()).unwrap();
+                git::Config::Global.set("partners.current", &author.nick).unwrap();
+                git::Config::Global.set("user.name", &author.name).unwrap();
+                git::Config::Global.set("user.email", &author.get_email()).unwrap();
                 print_current();
             }
             None => {
