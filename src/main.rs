@@ -21,14 +21,16 @@ const CFG: git::Config = git::Config::File(CONFIG_PATH);
 
 // Write the Docopt usage string.
 static USAGE: &'static str = "
-Usage: partners list
+Usage: partners current
+       partners list
        partners add --nick=<nick> --name=<name> [--email=<email>]
        partners add
-       partners current
        partners set <nick>
+       partners (--help | --version)
 
 Options:
-    -a, --archive  Copy everything.
+    -h, --help      Show help
+    --version       Show version information
 ";
 
 fn print_author_list(list: &[Author]) {
@@ -74,7 +76,8 @@ fn print_current() {
 }
 
 fn main() {
-    let args = Docopt::new(USAGE).and_then(|d| d.parse()).unwrap_or_else(|e| e.exit());
+    let docopt = Docopt::new(USAGE).unwrap().help(true).version(Some(env!("CARGO_PKG_VERSION").to_string()));
+    let args = docopt.parse().unwrap_or_else(|e| e.exit());
 
     let config = Rc::new(Config {
         domain: CFG.get("config.domain").unwrap_or_else(|_| "example.com".to_string()),
