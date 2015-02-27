@@ -52,13 +52,13 @@ fn parse_author_line(config: &Rc<Config>, line: &str) -> Result<Author> {
 
 fn get_authors(config: &Rc<Config>) -> Result<Vec<Author>> {
     let lines = try!(CFG.list("author.\\w+.name"));
-    lines.iter().map(|line| parse_author_line(config, &line)).collect()
+    lines.iter().map(|line| parse_author_line(config, line)).collect()
 }
 
 fn write_author(author: &Author) -> Result<()> {
     try!(CFG.set(&format!("author.{}.name", author.nick), &author.name));
     if let Some(ref email) = author.email {
-        try!(CFG.set(&format!("author.{}.email", author.nick), &email));
+        try!(CFG.set(&format!("author.{}.email", author.nick), email));
     }
     Ok(())
 }
@@ -79,14 +79,14 @@ fn main() {
     let docopt = Docopt::new(USAGE).unwrap().help(true).version(Some(env!("CARGO_PKG_VERSION").to_string()));
     let args = docopt.parse().unwrap_or_else(|e| e.exit());
 
-    let config = Rc::new(Config {
+    let ref config = Rc::new(Config {
         domain: CFG.get("config.domain").unwrap_or_else(|_| "example.com".to_string()),
         prefix: CFG.get("config.prefix").unwrap_or_else(|_| "dev".to_string()),
         separator: CFG.get("config.separator").unwrap_or_else(|_| "+".to_string()),
     });
 
     if args.get_bool("list") {
-        let authors = get_authors(&config).unwrap();
+        let authors = get_authors(config).unwrap();
         print_author_list(&authors);
     } else if args.get_bool("add") {
         let email = args.get_str("--email");
@@ -102,7 +102,7 @@ fn main() {
     } else if args.get_bool("set") {
         let nick = args.get_str("<nick>");
 
-        match get_authors(&config).unwrap().iter().find(|a| a.nick == nick) {
+        match get_authors(config).unwrap().iter().find(|a| a.nick == nick) {
             Some(author) => {
                 git::Config::Global.set("partners.current", &author.nick).unwrap();
                 git::Config::Global.set("user.name", &author.name).unwrap();
