@@ -21,8 +21,7 @@ const CFG: git::Config = git::Config::File(CONFIG_PATH);
 
 // Write the Docopt usage string.
 static USAGE: &'static str = "
-Usage: partners info
-       partners list
+Usage: partners list
        partners add --nick=<nick> --name=<name> [--email=<email>]
        partners add
        partners current
@@ -63,9 +62,15 @@ fn write_author(author: &Author) -> Result<()> {
 }
 
 fn print_current() {
-    println!("Nick:  {}", git::Config::None.get("partners.current").unwrap());
-    println!("Name:  {}", git::Config::None.get("user.name").unwrap());
-    println!("Email: {}", git::Config::None.get("user.email").unwrap());
+    if let Ok(nick) = git::Config::None.get("partners.current") {
+        println!("Nick:  {}", nick);
+    }
+    if let Ok(name) = git::Config::None.get("user.name") {
+        println!("Name:  {}", name);
+    }
+    if let Ok(email) = git::Config::None.get("user.email") {
+        println!("Email: {}", email);
+    }
 }
 
 fn main() {
