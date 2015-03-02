@@ -1,10 +1,10 @@
 use standard_error::StandardResult as Result;
 use std::process::{Command};
-use std::path::Path;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub enum Config {
-    File(&'static Path),
+    File(PathBuf),
     Global,
     None,
 }
@@ -25,7 +25,7 @@ impl Config {
     fn command(&self) -> Command {
         let mut command = Command::new("git");
         match *self {
-            Config::File(path) => command.arg("config").arg("-f").arg(path),
+            Config::File(ref path) => command.arg("config").arg("-f").arg(path),
             Config::Global => command.arg("config").arg("--global"),
             Config::None => command.arg("config")
         };

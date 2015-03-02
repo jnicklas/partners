@@ -2,6 +2,7 @@
 #![feature(process)]
 #![feature(fs)]
 #![feature(path)]
+#![feature(env)]
 
 extern crate docopt;
 
@@ -12,7 +13,6 @@ use docopt::Docopt;
 use standard_error::StandardResult as Result;
 use std::rc::Rc;
 use std::fs::PathExt;
-use std::path::Path;
 
 mod git;
 mod author;
@@ -99,12 +99,12 @@ fn set_current<T>(current: T) -> Result<()> where T: AuthorInformation {
 }
 
 fn main() {
-    let config_path = Path::new("partners.cfg");
+    let config_path = std::env::home_dir().expect("can't determine home directory").join(".partners.cfg");
 
     let docopt = Docopt::new(USAGE).unwrap().help(true).version(Some(env!("CARGO_PKG_VERSION").to_string()));
     let args = docopt.parse().unwrap_or_else(|e| e.exit());
 
-    let config = Rc::new(Config::from_git(git::Config::File(config_path)));
+    let config = Rc::new(Config::from_git(git::Config::File(config_path.clone())));
 
     if !config_path.exists() {
         println!("Config file {:?} does not exist, please run `partners setup`", config_path)
