@@ -141,13 +141,5 @@ fn main() {
                 println!("couldn't find author '{}'", nick);
             }
         }
-
-        // match get_authors(config).unwrap().iter().find(|a| a.nick == nick) {
-        //     Some(author) => {
-        //     }
-        //     None => {
-        //         println!("no such author");
-        //     }
-        // }
     }
 }
