@@ -127,7 +127,6 @@ fn main() {
         let authors = get_authors(config.clone()).unwrap();
         match filter_authors(&authors, &nicks) {
             Ok(filtered_authors) => {
-                println!("{:?}", filtered_authors);
                 match filtered_authors.len() {
                     0 => println!("no author specified"),
                     1 => set_current(filtered_authors[0]).unwrap(),
