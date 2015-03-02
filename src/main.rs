@@ -1,3 +1,4 @@
+#![feature(core)]
 #![feature(process)]
 
 extern crate docopt;
@@ -11,10 +12,14 @@ use std::rc::Rc;
 
 mod git;
 mod author;
+mod pair;
 mod config;
+mod concat;
 
 use author::Author;
+use pair::Pair;
 use config::Config;
+use std::borrow::Cow;
 
 const CONFIG_PATH: &'static str = "./partners.cfg";
 const CFG: git::Config = git::Config::File(CONFIG_PATH);
@@ -25,13 +30,19 @@ Usage: partners current
        partners list
        partners add --nick=<nick> --name=<name> [--email=<email>]
        partners add
-       partners set <nick>
+       partners set <nick>...
        partners (--help | --version)
 
 Options:
     -h, --help      Show help
     --version       Show version information
 ";
+
+trait AuthorInformation {
+    fn get_nick(&self) -> Cow<str>;
+    fn get_name(&self) -> Cow<str>;
+    fn get_email(&self) -> Cow<str>;
+}
 
 fn print_author_list(list: &[Author]) {
     for item in list.iter() {
@@ -75,6 +86,17 @@ fn print_current() {
     }
 }
 
+fn filter_authors<'a>(authors: &'a [Author], nicks: &[&str]) -> std::result::Result<Vec<&'a Author>, String> {
+    nicks.iter().map(|n| authors.iter().find(|a| &a.nick == n).ok_or_else(|| n.to_string())).collect()
+}
+
+fn set_current<T>(current: T) -> Result<()> where T: AuthorInformation {
+    try!(git::Config::Global.set("partners.current", &current.get_nick()));
+    try!(git::Config::Global.set("user.name", &current.get_name()));
+    try!(git::Config::Global.set("user.email", &current.get_email()));
+    Ok(())
+}
+
 fn main() {
     let docopt = Docopt::new(USAGE).unwrap().help(true).version(Some(env!("CARGO_PKG_VERSION").to_string()));
     let args = docopt.parse().unwrap_or_else(|e| e.exit());
@@ -100,18 +122,32 @@ fn main() {
     } else if args.get_bool("current") {
         print_current();
     } else if args.get_bool("set") {
-        let nick = args.get_str("<nick>");
-
-        match get_authors(config).unwrap().iter().find(|a| a.nick == nick) {
-            Some(author) => {
-                git::Config::Global.set("partners.current", &author.nick).unwrap();
-                git::Config::Global.set("user.name", &author.name).unwrap();
-                git::Config::Global.set("user.email", &author.get_email()).unwrap();
+        let nicks = args.get_vec("<nick>");
+        let authors = get_authors(config.clone()).unwrap();
+        match filter_authors(&authors, &nicks) {
+            Ok(filtered_authors) => {
+                println!("{:?}", filtered_authors);
+                match filtered_authors.len() {
+                    0 => println!("no author specified"),
+                    1 => set_current(filtered_authors[0]).unwrap(),
+                    _ => {
+                        let pair = Pair { config: config.clone(), authors: filtered_authors.as_slice() };
+                        set_current(&pair).unwrap()
+                    }
+                }
                 print_current();
-            }
-            None => {
-                println!("no such author");
+            },
+            Err(nick) => {
+                println!("couldn't find author '{}'", nick);
             }
         }
+
+        // match get_authors(config).unwrap().iter().find(|a| a.nick == nick) {
+        //     Some(author) => {
+        //     }
+        //     None => {
+        //         println!("no such author");
+        //     }
+        // }
     }
 }
