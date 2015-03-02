@@ -1,8 +1,10 @@
 use standard_error::StandardResult as Result;
 use std::process::{Command};
+use std::path::Path;
 
+#[derive(Debug)]
 pub enum Config {
-    File(&'static str),
+    File(&'static Path),
     Global,
     None,
 }

@@ -1,5 +1,7 @@
 #![feature(core)]
 #![feature(process)]
+#![feature(fs)]
+#![feature(path)]
 
 extern crate docopt;
 
@@ -9,6 +11,8 @@ extern crate standard_error;
 use docopt::Docopt;
 use standard_error::StandardResult as Result;
 use std::rc::Rc;
+use std::fs::PathExt;
+use std::path::Path;
 
 mod git;
 mod author;
@@ -20,9 +24,6 @@ use author::Author;
 use pair::Pair;
 use config::Config;
 use std::borrow::Cow;
-
-const CONFIG_PATH: &'static str = "./partners.cfg";
-const CFG: git::Config = git::Config::File(CONFIG_PATH);
 
 // Write the Docopt usage string.
 static USAGE: &'static str = "
@@ -56,20 +57,20 @@ fn parse_author_line(config: Rc<Config>, line: &str) -> Result<Author> {
     let mut parts = line.splitn(1, ' ');
     let nick = parts.next().unwrap().split('.').nth(1).unwrap().to_string();
     let name = parts.next().unwrap().to_string();
-    let email = CFG.get(&format!("author.{}.email", nick)).ok();
+    let email = config.git.get(&format!("author.{}.email", nick)).ok();
 
     Ok(Author { config: config, nick: nick, name: name, email: email })
 }
 
 fn get_authors(config: Rc<Config>) -> Result<Vec<Author>> {
-    let lines = try!(CFG.list("author.\\w+.name"));
+    let lines = try!(config.git.list("author.\\w+.name"));
     lines.iter().map(|line| parse_author_line(config.clone(), line)).collect()
 }
 
 fn write_author(author: &Author) -> Result<()> {
-    try!(CFG.set(&format!("author.{}.name", author.nick), &author.name));
+    try!(author.config.git.set(&format!("author.{}.name", author.nick), &author.name));
     if let Some(ref email) = author.email {
-        try!(CFG.set(&format!("author.{}.email", author.nick), email));
+        try!(author.config.git.set(&format!("author.{}.email", author.nick), email));
     }
     Ok(())
 }
@@ -98,16 +99,16 @@ fn set_current<T>(current: T) -> Result<()> where T: AuthorInformation {
 }
 
 fn main() {
+    let config_path = Path::new("partners.cfg");
+
     let docopt = Docopt::new(USAGE).unwrap().help(true).version(Some(env!("CARGO_PKG_VERSION").to_string()));
     let args = docopt.parse().unwrap_or_else(|e| e.exit());
 
-    let config = Rc::new(Config {
-        domain: CFG.get("config.domain").unwrap_or_else(|_| "example.com".to_string()),
-        prefix: CFG.get("config.prefix").unwrap_or_else(|_| "dev".to_string()),
-        separator: CFG.get("config.separator").unwrap_or_else(|_| "+".to_string()),
-    });
+    let config = Rc::new(Config::from_git(git::Config::File(config_path)));
 
-    if args.get_bool("list") {
+    if !config_path.exists() {
+        println!("Config file {:?} does not exist, please run `partners setup`", config_path)
+    } else if args.get_bool("list") {
         let authors = get_authors(config).unwrap();
         print_author_list(&authors);
     } else if args.get_bool("add") {
