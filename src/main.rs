@@ -1,8 +1,6 @@
 #![feature(core)]
-#![feature(process)]
 #![feature(fs)]
 #![feature(path)]
-#![feature(env)]
 
 extern crate docopt;
 
