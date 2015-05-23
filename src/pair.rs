@@ -13,15 +13,15 @@ pub struct Pair<'a> {
 
 impl<'a> AuthorInformation for &'a Pair<'a> {
     fn get_name(&self) -> Cow<str> {
-        Cow::Owned(self.authors.iter().map(|a| &a.name).connect(" and "))
+        Cow::Owned(self.authors.iter().map(|a| &*a.name).connect(" and "))
     }
 
     fn get_nick(&self) -> Cow<str> {
-        Cow::Owned(self.authors.iter().map(|a| &a.nick).connect(&self.config.separator))
+        Cow::Owned(self.authors.iter().map(|a| &*a.nick).connect(&self.config.separator))
     }
 
     fn get_email(&self) -> Cow<str> {
-        let names = self.authors.iter().map(|a| &a.nick).connect(&self.config.separator);
+        let names = self.authors.iter().map(|a| &*a.nick).connect(&self.config.separator);
         Cow::Owned(format!("{}{}{}@{}", self.config.prefix, self.config.separator, names, self.config.domain))
     }
 }

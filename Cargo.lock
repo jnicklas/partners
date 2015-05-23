@@ -2,37 +2,25 @@
 name = "partners"
 version = "0.0.1"
 dependencies = [
- "docopt 0.6.45 (registry+https://github.com/rust-lang/crates.io-index)",
- "standard_error 0.0.1 (git+https://github.com/jnicklas/standard_error.git)",
+ "docopt 0.6.63 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "docopt"
-version = "0.6.45"
+version = "0.6.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "libc 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "regex 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)",
- "rustc-serialize 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "regex 0.1.30 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustc-serialize 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "libc"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
 name = "regex"
-version = "0.1.18"
+version = "0.1.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "rustc-serialize"
-version = "0.3.1"
+version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "standard_error"
-version = "0.0.1"
-source = "git+https://github.com/jnicklas/standard_error.git#287888b96ac1ba9fad015d0d9ab26632ce3c1370"
 

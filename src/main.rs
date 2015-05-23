@@ -1,17 +1,9 @@
-#![feature(core)]
-#![feature(fs)]
-#![feature(path)]
-
 extern crate docopt;
 
-#[macro_use]
-extern crate standard_error;
-
 use docopt::Docopt;
-use standard_error::StandardResult as Result;
 use std::rc::Rc;
-use std::fs::PathExt;
 
+#[macro_use]
 mod git;
 mod author;
 mod pair;
@@ -22,6 +14,8 @@ use author::Author;
 use pair::Pair;
 use config::Config;
 use std::borrow::Cow;
+use std::fs;
+use std::error::Error;
 
 // Write the Docopt usage string.
 static USAGE: &'static str = "
@@ -51,21 +45,21 @@ fn print_author_list(list: &[Author]) {
     }
 }
 
-fn parse_author_line(config: Rc<Config>, line: &str) -> Result<Author> {
-    let mut parts = line.splitn(1, ' ');
-    let nick = parts.next().unwrap().split('.').nth(1).unwrap().to_string();
-    let name = parts.next().unwrap().to_string();
+fn parse_author_line(config: Rc<Config>, line: &str) -> Result<Author, Box<Error>> {
+    let mut parts = line.splitn(2, ' ');
+    let nick = parts.next().expect("does not contain nick").split('.').nth(1).unwrap().to_string();
+    let name = parts.next().expect("does not contain name").to_string();
     let email = config.git.get(&format!("author.{}.email", nick)).ok();
 
     Ok(Author { config: config, nick: nick, name: name, email: email })
 }
 
-fn get_authors(config: Rc<Config>) -> Result<Vec<Author>> {
+fn get_authors(config: Rc<Config>) -> Result<Vec<Author>, Box<Error>> {
     let lines = try!(config.git.list("author.\\w+.name"));
     lines.iter().map(|line| parse_author_line(config.clone(), line)).collect()
 }
 
-fn write_author(author: &Author) -> Result<()> {
+fn write_author(author: &Author) -> Result<(), Box<Error>> {
     try!(author.config.git.set(&format!("author.{}.name", author.nick), &author.name));
     if let Some(ref email) = author.email {
         try!(author.config.git.set(&format!("author.{}.email", author.nick), email));
@@ -89,7 +83,7 @@ fn filter_authors<'a>(authors: &'a [Author], nicks: &[&str]) -> std::result::Res
     nicks.iter().map(|n| authors.iter().find(|a| &a.nick == n).ok_or_else(|| n.to_string())).collect()
 }
 
-fn set_current<T>(current: T) -> Result<()> where T: AuthorInformation {
+fn set_current<T>(current: T) -> Result<(), Box<Error>> where T: AuthorInformation {
     try!(git::Config::Global.set("partners.current", &current.get_nick()));
     try!(git::Config::Global.set("user.name", &current.get_name()));
     try!(git::Config::Global.set("user.email", &current.get_email()));
@@ -104,7 +98,7 @@ fn main() {
 
     let config = Rc::new(Config::from_git(git::Config::File(config_path.clone())));
 
-    if !config_path.exists() {
+    if !fs::metadata(&config_path).map(|x| x.is_file()).unwrap_or(false) {
         println!("Config file {:?} does not exist, please run `partners setup`", config_path)
     } else if args.get_bool("list") {
         let authors = get_authors(config).unwrap();
@@ -129,7 +123,7 @@ fn main() {
                     0 => println!("no author specified"),
                     1 => set_current(filtered_authors[0]).unwrap(),
                     _ => {
-                        let pair = Pair { config: config.clone(), authors: filtered_authors.as_slice() };
+                        let pair = Pair { config: config.clone(), authors: &filtered_authors };
                         set_current(&pair).unwrap()
                     }
                 }
