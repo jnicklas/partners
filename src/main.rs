@@ -1,10 +1,10 @@
 extern crate docopt;
+extern crate git2;
 
 use docopt::Docopt;
 use std::rc::Rc;
 
 #[macro_use]
-mod git;
 mod author;
 mod pair;
 mod config;
@@ -45,63 +45,70 @@ fn print_author_list(list: &[Author]) {
     }
 }
 
-fn parse_author_line(config: Rc<Config>, line: &str) -> Result<Author, Box<Error>> {
-    let mut parts = line.splitn(2, ' ');
-    let nick = parts.next().expect("does not contain nick").split('.').nth(1).unwrap().to_string();
-    let name = parts.next().expect("does not contain name").to_string();
-    let email = config.git.get(&format!("author.{}.email", nick)).ok();
+fn get_authors(partners_config: &git2::Config, config: Rc<Config>) -> Result<Vec<Author>, Box<Error>> {
+    let entries = try!(partners_config.entries(Some("author.*.name")));
+    entries.map(|entry| {
+        let nick = entry.name().expect("does not contain nick").split('.').nth(1).unwrap().to_string();
+        let name = entry.value().expect("does not contain name").to_string();
+        let email = partners_config.get_string(&format!("author.{}.email", nick)).ok();
 
-    Ok(Author { config: config, nick: nick, name: name, email: email })
+        Ok(Author { config: config.clone(), nick: nick, name: name, email: email })
+    }).collect()
 }
 
-fn get_authors(config: Rc<Config>) -> Result<Vec<Author>, Box<Error>> {
-    let lines = try!(config.git.list("author.\\w+.name"));
-    lines.iter().map(|line| parse_author_line(config.clone(), line)).collect()
-}
-
-fn write_author(author: &Author) -> Result<(), Box<Error>> {
-    try!(author.config.git.set(&format!("author.{}.name", author.nick), &author.name));
+fn write_author(partners_config: &mut git2::Config, author: &Author) -> Result<(), Box<Error>> {
+    try!(partners_config.set_str(&format!("author.{}.name", author.nick), &author.name));
     if let Some(ref email) = author.email {
-        try!(author.config.git.set(&format!("author.{}.email", author.nick), email));
+        try!(partners_config.set_str(&format!("author.{}.email", author.nick), email));
     }
     Ok(())
 }
 
-fn print_current() {
-    if let Ok(nick) = git::Config::None.get("partners.current") {
+fn print_current(git_config: &mut git2::Config) -> Result<(), Box<Error>> {
+    let snapshot = try!(git_config.snapshot());
+    if let Ok(nick) = snapshot.get_str("partners.current") {
         println!("Nick:  {}", nick);
     }
-    if let Ok(name) = git::Config::None.get("user.name") {
+    if let Ok(name) = snapshot.get_str("user.name") {
         println!("Name:  {}", name);
     }
-    if let Ok(email) = git::Config::None.get("user.email") {
+    if let Ok(email) = snapshot.get_str("user.email") {
         println!("Email: {}", email);
     }
+    Ok(())
 }
 
 fn filter_authors<'a>(authors: &'a [Author], nicks: &[&str]) -> std::result::Result<Vec<&'a Author>, String> {
     nicks.iter().map(|n| authors.iter().find(|a| &a.nick == n).ok_or_else(|| n.to_string())).collect()
 }
 
-fn set_current<T>(current: T) -> Result<(), Box<Error>> where T: AuthorInformation {
-    try!(git::Config::Global.set("partners.current", &current.get_nick()));
-    try!(git::Config::Global.set("user.name", &current.get_name()));
-    try!(git::Config::Global.set("user.email", &current.get_email()));
+fn set_current<T>(git_config: &mut git2::Config, current: T) -> Result<(), Box<Error>> where T: AuthorInformation {
+    try!(git_config.set_str("partners.current", &current.get_nick()));
+    try!(git_config.set_str("user.name", &current.get_name()));
+    try!(git_config.set_str("user.email", &current.get_email()));
     Ok(())
 }
 
 fn main() {
-    let config_path = std::env::home_dir().expect("can't determine home directory").join(".partners.cfg");
+    let partners_config_path = std::env::home_dir().expect("can't determine home directory").join(".partners.cfg");
+
+    let repository = git2::Repository::discover(::std::env::current_dir().unwrap()).unwrap();
 
     let docopt = Docopt::new(USAGE).unwrap().help(true).version(Some(env!("CARGO_PKG_VERSION").to_string()));
     let args = docopt.parse().unwrap_or_else(|e| e.exit());
 
-    let config = Rc::new(Config::from_git(git::Config::File(config_path.clone())));
+    let mut partners_config = git2::Config::open(&partners_config_path).unwrap();
 
-    if !fs::metadata(&config_path).map(|x| x.is_file()).unwrap_or(false) {
-        println!("Config file {:?} does not exist, please run `partners setup`", config_path)
+    let mut git_config = repository.config().unwrap();
+
+    let mut global_config = git2::Config::open_default().unwrap();
+
+    let config = Rc::new(Config::from_git(&partners_config));
+
+    if !fs::metadata(&partners_config_path).map(|x| x.is_file()).unwrap_or(false) {
+        println!("Config file {:?} does not exist, please run `partners setup`", partners_config_path)
     } else if args.get_bool("list") {
-        let authors = get_authors(config).unwrap();
+        let authors = get_authors(&partners_config, config.clone()).unwrap();
         print_author_list(&authors);
     } else if args.get_bool("add") {
         let email = args.get_str("--email");
@@ -111,23 +118,23 @@ fn main() {
         let email = if email.is_empty() { None } else { Some(email.to_string()) };
 
         let author = Author { config: config.clone(), nick: nick.to_string(), name: name.to_string(), email: email };
-        write_author(&author).unwrap();
+        write_author(&mut partners_config, &author).unwrap();
     } else if args.get_bool("current") {
-        print_current();
+        print_current(&mut git_config).ok().expect("cannot print current author");
     } else if args.get_bool("set") {
         let nicks = args.get_vec("<nick>");
-        let authors = get_authors(config.clone()).unwrap();
+        let authors = get_authors(&partners_config, config.clone()).unwrap();
         match filter_authors(&authors, &nicks) {
             Ok(filtered_authors) => {
                 match filtered_authors.len() {
                     0 => println!("no author specified"),
-                    1 => set_current(filtered_authors[0]).unwrap(),
+                    1 => set_current(&mut global_config, filtered_authors[0]).unwrap(),
                     _ => {
                         let pair = Pair { config: config.clone(), authors: &filtered_authors };
-                        set_current(&pair).unwrap()
+                        set_current(&mut global_config, &pair).unwrap()
                     }
                 }
-                print_current();
+                print_current(&mut git_config).ok().expect("cannot print current author");;
             },
             Err(nick) => {
                 println!("couldn't find author '{}'", nick);

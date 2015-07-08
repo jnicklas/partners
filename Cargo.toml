@@ -6,3 +6,4 @@ authors = ["Jonas Nicklas <jonas.nicklas@gmail.com>"]
 
 [dependencies]
 docopt = "*"
+git2 = "*"
