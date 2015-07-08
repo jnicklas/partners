@@ -4,6 +4,8 @@ extern crate git2;
 use docopt::Docopt;
 use std::rc::Rc;
 
+pub type Result<T, E=Box<::std::error::Error+Send+Sync>> = ::std::result::Result<T, E>;
+
 #[macro_use]
 mod author;
 mod pair;
@@ -15,7 +17,6 @@ use pair::Pair;
 use config::Config;
 use std::borrow::Cow;
 use std::fs;
-use std::error::Error;
 
 // Write the Docopt usage string.
 static USAGE: &'static str = "
@@ -39,13 +40,11 @@ trait AuthorInformation {
 
 fn print_author_list(list: &[Author]) {
     for item in list.iter() {
-        println!("{}:", item.nick);
-        println!("  Name:  {}", item.name);
-        println!("  Email: {}", item.get_email());
+        println!("{}", item);
     }
 }
 
-fn get_authors(partners_config: &git2::Config, config: Rc<Config>) -> Result<Vec<Author>, Box<Error>> {
+fn get_authors(partners_config: &git2::Config, config: Rc<Config>) -> Result<Vec<Author>> {
     let entries = try!(partners_config.entries(Some("author.*.name")));
     entries.map(|entry| {
         let nick = entry.name().expect("does not contain nick").split('.').nth(1).unwrap().to_string();
@@ -56,7 +55,7 @@ fn get_authors(partners_config: &git2::Config, config: Rc<Config>) -> Result<Vec
     }).collect()
 }
 
-fn write_author(partners_config: &mut git2::Config, author: &Author) -> Result<(), Box<Error>> {
+fn write_author(partners_config: &mut git2::Config, author: &Author) -> Result<()> {
     try!(partners_config.set_str(&format!("author.{}.name", author.nick), &author.name));
     if let Some(ref email) = author.email {
         try!(partners_config.set_str(&format!("author.{}.email", author.nick), email));
@@ -64,25 +63,25 @@ fn write_author(partners_config: &mut git2::Config, author: &Author) -> Result<(
     Ok(())
 }
 
-fn print_current(git_config: &mut git2::Config) -> Result<(), Box<Error>> {
+fn print_current(git_config: &mut git2::Config) -> Result<()> {
     let snapshot = try!(git_config.snapshot());
     if let Ok(nick) = snapshot.get_str("partners.current") {
-        println!("Nick:  {}", nick);
+        println!("{}:", nick);
     }
     if let Ok(name) = snapshot.get_str("user.name") {
-        println!("Name:  {}", name);
+        println!("  Name:  {}", name);
     }
     if let Ok(email) = snapshot.get_str("user.email") {
-        println!("Email: {}", email);
+        println!("  Email: {}", email);
     }
     Ok(())
 }
 
-fn filter_authors<'a>(authors: &'a [Author], nicks: &[&str]) -> std::result::Result<Vec<&'a Author>, String> {
+fn filter_authors<'a>(authors: &'a [Author], nicks: &[&str]) -> Result<Vec<&'a Author>, String> {
     nicks.iter().map(|n| authors.iter().find(|a| &a.nick == n).ok_or_else(|| n.to_string())).collect()
 }
 
-fn set_current<T>(git_config: &mut git2::Config, current: T) -> Result<(), Box<Error>> where T: AuthorInformation {
+fn set_current<T>(git_config: &mut git2::Config, current: T) -> Result<()> where T: AuthorInformation {
     try!(git_config.set_str("partners.current", &current.get_nick()));
     try!(git_config.set_str("user.name", &current.get_name()));
     try!(git_config.set_str("user.email", &current.get_email()));
@@ -112,12 +111,8 @@ fn main() {
         print_author_list(&authors);
     } else if args.get_bool("add") {
         let email = args.get_str("--email");
-        let nick = args.get_str("--nick");
-        let name = args.get_str("--name");
-
-        let email = if email.is_empty() { None } else { Some(email.to_string()) };
-
-        let author = Author { config: config.clone(), nick: nick.to_string(), name: name.to_string(), email: email };
+        let email = if email.is_empty() { None } else { Some(email) };
+        let author = Author::new(&config, args.get_str("--nick"), args.get_str("--name"), email);
         write_author(&mut partners_config, &author).unwrap();
     } else if args.get_bool("current") {
         print_current(&mut git_config).ok().expect("cannot print current author");

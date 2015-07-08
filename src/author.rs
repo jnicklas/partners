@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use std::rc::Rc;
 use std::cmp::Ordering;
 use super::AuthorInformation;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct Author {
@@ -10,6 +11,30 @@ pub struct Author {
     pub nick: String,
     pub name: String,
     pub email: Option<String>,
+}
+
+impl Author {
+    pub fn new<T1, T2, T3>(
+        config: &Rc<Config>, nick: T1, name: T2, email: Option<T3>
+    ) -> Author where T1: Into<String>, T2: Into<String>, T3: Into<String> {
+        Author {
+            config: config.clone(),
+            nick: nick.into(),
+            name: name.into(),
+            email: email.map(|e| e.into())
+        }
+    }
+}
+
+impl fmt::Display for Author {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        try!(self.nick.fmt(f));
+        try!(":\n  Name:  ".fmt(f));
+        try!(self.name.fmt(f));
+        try!("\n  Email: ".fmt(f));
+        try!(self.get_email().fmt(f));
+        Ok(())
+    }
 }
 
 impl<'a> AuthorInformation for &'a Author {

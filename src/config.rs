@@ -13,5 +13,4 @@ impl Config {
             separator: config.get_string("config.separator").unwrap_or_else(|_| "+".to_string()),
         }
     }
-
 }
