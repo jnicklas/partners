@@ -7,15 +7,16 @@ use std::rc::Rc;
 pub type Result<T, E=Box<::std::error::Error+Send+Sync>> = ::std::result::Result<T, E>;
 
 #[macro_use]
+mod author_information;
 mod author;
 mod pair;
 mod config;
 mod concat;
 
+use author_information::AuthorInformation;
 use author::Author;
 use pair::Pair;
 use config::Config;
-use std::borrow::Cow;
 use std::fs;
 
 // Write the Docopt usage string.
@@ -31,12 +32,6 @@ Options:
     -h, --help      Show help
     --version       Show version information
 ";
-
-trait AuthorInformation {
-    fn get_nick(&self) -> Cow<str>;
-    fn get_name(&self) -> Cow<str>;
-    fn get_email(&self) -> Cow<str>;
-}
 
 fn print_author_list(list: &[Author]) {
     for item in list.iter() {

@@ -1,6 +1,6 @@
 use config::Config;
 use std::borrow::Cow;
-use super::AuthorInformation;
+use author_information::AuthorInformation;
 use concat::IteratorConcatExt;
 use author::Author;
 use std::rc::Rc;

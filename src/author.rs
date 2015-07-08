@@ -2,7 +2,7 @@ use config::Config;
 use std::borrow::Cow;
 use std::rc::Rc;
 use std::cmp::Ordering;
-use super::AuthorInformation;
+use author_information::AuthorInformation;
 use std::fmt;
 
 #[derive(Debug)]
