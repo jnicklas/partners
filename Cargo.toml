@@ -4,5 +4,10 @@ name = "partners"
 version = "0.0.1"
 authors = ["Jonas Nicklas <jonas.nicklas@gmail.com>"]
 
+description = "Switch between multiple git authors"
+homepage = "https://github.com/elabs/partners"
+readme = "README.md"
+license = "MIT"
+
 [dependencies]
 docopt = "*"
