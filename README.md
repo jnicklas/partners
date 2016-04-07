@@ -22,15 +22,19 @@ All other alternatives we could find seem to be incomplete or unmaintained.
 
 ## Installation
 
+First, install Rust and Cargo. You can use the Rustup script, see [here](https://www.rust-lang.org/downloads.html), or on OS X you can simply install them via Homebrew like this:
+
 ``` sh
-git clone https://github.com/elabs/partners.git
-cd partners
-curl -L https://static.rust-lang.org/rustup.sh | sudo sh
-cargo build --release
-cp target/release/partners /usr/local/bin/partners
+brew install rust
 ```
 
-This will be easier once a stable version of Rust is released.
+Now install Partners via Cargo:
+
+``` sh
+cargo install partners
+```
+
+It might prompt you to add Cargo's install directory to your path.
 
 Partners is unfortunately still lacking an interactive setup method. Copy the
 example into your home directory:
