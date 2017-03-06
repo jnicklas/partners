@@ -1,7 +1,11 @@
-extern crate docopt;
+#[macro_use] extern crate clap;
+#[macro_use] extern crate derive_error;
 
-use docopt::Docopt;
 use std::rc::Rc;
+use std::process;
+use std::io;
+use std::io::Write;
+use std::path::PathBuf;
 
 #[macro_use]
 mod git;
@@ -10,26 +14,13 @@ mod pair;
 mod config;
 mod concat;
 
+use clap::{App, ArgMatches};
 use author::Author;
 use pair::Pair;
 use config::Config;
 use std::borrow::Cow;
 use std::fs;
 use std::error::Error;
-
-// Write the Docopt usage string.
-static USAGE: &'static str = "
-Usage: partners current
-       partners list
-       partners add --nick=<nick> --name=<name> [--email=<email>]
-       partners add
-       partners set <nick>...
-       partners (--help | --version)
-
-Options:
-    -h, --help      Show help
-    --version       Show version information
-";
 
 trait AuthorInformation {
     fn get_nick(&self) -> Cow<str>;
@@ -90,48 +81,103 @@ fn set_current<T>(current: T) -> Result<(), Box<Error>> where T: AuthorInformati
     Ok(())
 }
 
-fn main() {
-    let config_path = std::env::home_dir().expect("can't determine home directory").join(".partners.cfg");
+#[derive(Debug, Error)] pub enum PartnersError {
+    RandomError,
+    NoSuchCommand,
+    HomeDirectoryNotFound,
+    NoAuthorSpecified,
+    AuthorNotFound,
+}
 
-    let docopt = Docopt::new(USAGE).unwrap().help(true).version(Some(env!("CARGO_PKG_VERSION").to_string()));
-    let args = docopt.parse().unwrap_or_else(|e| e.exit());
+pub type Result<T, E=PartnersError> = ::std::result::Result<T, E>;
 
-    let config = Rc::new(Config::from_git(git::Config::File(config_path.clone())));
+fn get_config_path() -> Result<PathBuf> {
+    Ok(std::env::home_dir().ok_or(PartnersError::HomeDirectoryNotFound)?.join(".partners.cfg"))
+}
 
-    if !fs::metadata(&config_path).map(|x| x.is_file()).unwrap_or(false) {
-        println!("Config file {:?} does not exist, please run `partners setup`", config_path)
-    } else if args.get_bool("list") {
-        let authors = get_authors(config).unwrap();
-        print_author_list(&authors);
-    } else if args.get_bool("add") {
-        let email = args.get_str("--email");
-        let nick = args.get_str("--nick");
-        let name = args.get_str("--name");
+fn get_config() -> Result<Config> {
+    Ok(Config::from_git(git::Config::File(get_config_path()?.clone())))
+}
 
-        let email = if email.is_empty() { None } else { Some(email.to_string()) };
 
-        let author = Author { config: config.clone(), nick: nick.to_string(), name: name.to_string(), email: email };
-        write_author(&author).unwrap();
-    } else if args.get_bool("current") {
-        print_current();
-    } else if args.get_bool("set") {
-        let nicks = args.get_vec("<nick>");
-        let authors = get_authors(config.clone()).unwrap();
-        match filter_authors(&authors, &nicks) {
-            Ok(filtered_authors) => {
-                match filtered_authors.len() {
-                    0 => println!("no author specified"),
-                    1 => set_current(filtered_authors[0]).unwrap(),
-                    _ => {
-                        let pair = Pair { config: config.clone(), authors: &filtered_authors };
-                        set_current(&pair).unwrap()
-                    }
+fn list() -> Result<()> {
+    let config = Rc::new(get_config()?);
+    let authors = get_authors(config).unwrap();
+
+    print_author_list(&authors);
+    Ok(())
+}
+
+fn add(matches: &ArgMatches) -> Result<()> {
+    let nick = matches.value_of("nick").unwrap();
+    let name = matches.value_of("name").unwrap();
+    let email = matches.value_of("email").unwrap();
+
+    let config = Rc::new(get_config()?);
+
+    let email = if email.is_empty() { None } else { Some(email.to_string()) };
+
+    let author = Author { config: config.clone(), nick: nick.to_string(), name: name.to_string(), email: email };
+    write_author(&author).unwrap();
+    Ok(())
+}
+
+fn current() -> Result<()> {
+    print_current();
+    Ok(())
+}
+
+fn set(matches: &ArgMatches) -> Result<()> {
+    let config = Rc::new(get_config()?);
+    let nicks: Vec<&str> = matches.values_of("nicks").unwrap().collect();
+
+    let authors = get_authors(config.clone()).unwrap();
+
+    match filter_authors(&authors, &nicks) {
+        Ok(filtered_authors) => {
+            match filtered_authors.len() {
+                0 => Err(PartnersError::NoAuthorSpecified)?,
+                1 => {
+                    set_current(filtered_authors[0]).unwrap();
                 }
-                print_current();
-            },
-            Err(nick) => {
-                println!("couldn't find author '{}'", nick);
+                _ => {
+                    let pair = Pair { config: config.clone(), authors: &filtered_authors };
+                    set_current(&pair).unwrap();
+                }
             }
+            print_current();
+            Ok(())
+        },
+        Err(nick) => {
+            Err(PartnersError::AuthorNotFound)
+        }
+    }
+}
+
+
+fn run() -> Result<()> {
+    let yaml = load_yaml!("cli.yml");
+    let app = App::from_yaml(yaml).version(crate_version!()).author(crate_authors!());
+    let matches = app.get_matches();
+
+    match matches.subcommand() {
+        ("list", Some(sub_matches)) => list(),
+        ("current", Some(sub_matches)) => current(),
+        ("set", Some(sub_matches)) => set(sub_matches),
+        ("add", Some(sub_matches)) => add(sub_matches),
+        _ => {
+            println!("{}", matches.usage());
+            Ok(())
+        }
+    }
+}
+
+fn main() {
+    match run() {
+        Ok(_) => {},
+        Err(e) => {
+            writeln!(&mut io::stderr(), "ERROR: {}", e).unwrap();
+            process::exit(1);
         }
     }
 }

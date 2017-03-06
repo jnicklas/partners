@@ -1,13 +1,13 @@
 [package]
-
-name = "partners"
-version = "0.1.0"
 authors = ["Jonas Nicklas <jonas.nicklas@gmail.com>"]
-
 description = "Switch between multiple git authors"
 homepage = "https://github.com/elabs/partners"
-readme = "README.md"
 license = "MIT"
+name = "partners"
+readme = "README.md"
+version = "0.1.0"
 
 [dependencies]
+clap = {version = "2.20.5", features = ["yaml"]}
+derive-error = "0.0.3"
 docopt = "0.6.74"

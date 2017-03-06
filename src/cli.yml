@@ -1,0 +1,30 @@
+name: partners
+about: git author config manager for shared machines and pair programming
+subcommands:
+  - list:
+      about: list all available authors
+  - current:
+      about: show current author information
+  - set:
+      about: set the git config to the author or authors given
+      settings:
+        - TrailingVarArg
+      args:
+        - nicks:
+            help: nicknames of the authors you wish to set
+            multiple: true
+  - add:
+      about: add a new author
+      args:
+        - nick:
+            help: the nickname of the new author
+            long: nick
+            takes_value: true
+        - name:
+            help: the full name of the new author
+            long: name
+            takes_value: true
+        - email:
+            help: the email address of the new author
+            long: email
+            takes_value: true
