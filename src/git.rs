@@ -1,6 +1,6 @@
 use std::process::{Command};
 use std::path::PathBuf;
-use std::error::Error;
+use PartnersError;
 
 #[derive(Debug)]
 pub enum Config {
@@ -9,22 +9,7 @@ pub enum Config {
     None,
 }
 
-#[derive(Debug)]
-struct ReadResultError { reason: String }
-
-impl ::std::fmt::Display for ReadResultError {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        self.reason.fmt(f)
-    }
-}
-
-impl Error for ReadResultError {
-    fn description(&self) -> &str {
-        &self.reason
-    }
-}
-
-fn read_result(command: &mut Command) -> Result<String, Box<Error>> {
+fn read_result(command: &mut Command) -> Result<String, PartnersError> {
     let result = try!(command.output());
 
     if result.status.success() {
@@ -32,7 +17,7 @@ fn read_result(command: &mut Command) -> Result<String, Box<Error>> {
         Ok(string.trim().to_string())
     } else {
         let string = try!(String::from_utf8(result.stderr));
-        Err(Box::new(ReadResultError { reason: string }))
+        Err(PartnersError::GitError(string))
     }
 }
 
@@ -47,13 +32,13 @@ impl Config {
         command
     }
 
-    pub fn get(&self, key: &str) -> Result<String, Box<Error>> {
+    pub fn get(&self, key: &str) -> Result<String, PartnersError> {
         let mut command = self.command();
 
         read_result(command.arg(key))
     }
 
-    pub fn set(&self, key: &str, value: &str) -> Result<(), Box<Error>> {
+    pub fn set(&self, key: &str, value: &str) -> Result<(), PartnersError> {
         let mut command = self.command();
 
         try!(read_result(command.arg(key).arg(value)));
@@ -61,7 +46,7 @@ impl Config {
         Ok(())
     }
 
-    pub fn list(&self, keyexp: &str) -> Result<Vec<String>, Box<Error>> {
+    pub fn list(&self, keyexp: &str) -> Result<Vec<String>, PartnersError> {
         let mut command = self.command();
 
         let string = try!(read_result(command.arg("--get-regexp").arg(keyexp)));

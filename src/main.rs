@@ -19,8 +19,6 @@ use author::Author;
 use pair::Pair;
 use config::Config;
 use std::borrow::Cow;
-use std::fs;
-use std::error::Error;
 
 trait AuthorInformation {
     fn get_nick(&self) -> Cow<str>;
@@ -28,15 +26,7 @@ trait AuthorInformation {
     fn get_email(&self) -> Cow<str>;
 }
 
-fn print_author_list(list: &[Author]) {
-    for item in list.iter() {
-        println!("{}:", item.nick);
-        println!("  Name:  {}", item.name);
-        println!("  Email: {}", item.get_email());
-    }
-}
-
-fn parse_author_line(config: Rc<Config>, line: &str) -> Result<Author, Box<Error>> {
+fn parse_author_line(config: Rc<Config>, line: &str) -> Result<Author, PartnersError> {
     let mut parts = line.splitn(2, ' ');
     let nick = parts.next().expect("does not contain nick").split('.').nth(1).unwrap().to_string();
     let name = parts.next().expect("does not contain name").to_string();
@@ -45,12 +35,12 @@ fn parse_author_line(config: Rc<Config>, line: &str) -> Result<Author, Box<Error
     Ok(Author { config: config, nick: nick, name: name, email: email })
 }
 
-fn get_authors(config: Rc<Config>) -> Result<Vec<Author>, Box<Error>> {
+fn get_authors(config: Rc<Config>) -> Result<Vec<Author>, PartnersError> {
     let lines = try!(config.git.list("author.\\w+.name"));
     lines.iter().map(|line| parse_author_line(config.clone(), line)).collect()
 }
 
-fn write_author(author: &Author) -> Result<(), Box<Error>> {
+fn write_author(author: &Author) -> Result<(), PartnersError> {
     try!(author.config.git.set(&format!("author.{}.name", author.nick), &author.name));
     if let Some(ref email) = author.email {
         try!(author.config.git.set(&format!("author.{}.email", author.nick), email));
@@ -74,7 +64,7 @@ fn filter_authors<'a>(authors: &'a [Author], nicks: &[&str]) -> std::result::Res
     nicks.iter().map(|n| authors.iter().find(|a| &a.nick == n).ok_or_else(|| n.to_string())).collect()
 }
 
-fn set_current<T>(current: T) -> Result<(), Box<Error>> where T: AuthorInformation {
+fn set_current<T>(current: T) -> Result<(), PartnersError> where T: AuthorInformation {
     try!(git::Config::Global.set("partners.current", &current.get_nick()));
     try!(git::Config::Global.set("user.name", &current.get_name()));
     try!(git::Config::Global.set("user.email", &current.get_email()));
@@ -87,6 +77,10 @@ fn set_current<T>(current: T) -> Result<(), Box<Error>> where T: AuthorInformati
     HomeDirectoryNotFound,
     NoAuthorSpecified,
     AuthorNotFound,
+    #[error(msg_embedded, non_std, no_from)]
+    GitError(String),
+    IoError(io::Error),
+    UTF8Error(::std::string::FromUtf8Error)
 }
 
 pub type Result<T, E=PartnersError> = ::std::result::Result<T, E>;
@@ -104,7 +98,12 @@ fn list() -> Result<()> {
     let config = Rc::new(get_config()?);
     let authors = get_authors(config).unwrap();
 
-    print_author_list(&authors);
+    for item in authors.iter() {
+        println!("{}:", item.nick);
+        println!("  Name:  {}", item.name);
+        println!("  Email: {}", item.get_email());
+    }
+
     Ok(())
 }
 
@@ -148,7 +147,7 @@ fn set(matches: &ArgMatches) -> Result<()> {
             print_current();
             Ok(())
         },
-        Err(nick) => {
+        Err(_nick) => {
             Err(PartnersError::AuthorNotFound)
         }
     }
@@ -161,8 +160,8 @@ fn run() -> Result<()> {
     let matches = app.get_matches();
 
     match matches.subcommand() {
-        ("list", Some(sub_matches)) => list(),
-        ("current", Some(sub_matches)) => current(),
+        ("list", Some(_sub_matches)) => list(),
+        ("current", Some(_sub_matches)) => current(),
         ("set", Some(sub_matches)) => set(sub_matches),
         ("add", Some(sub_matches)) => add(sub_matches),
         _ => {
