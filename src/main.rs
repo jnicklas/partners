@@ -1,9 +1,9 @@
 #[macro_use] extern crate clap;
 #[macro_use] extern crate derive_error;
+extern crate termion;
 
 use std::process;
-use std::io::Write;
-use std::io;
+use std::io::{self, Write};
 
 #[macro_use]
 mod git;
@@ -11,6 +11,7 @@ mod author;
 mod author_selection;
 mod error;
 mod commands;
+mod helpers;
 
 use git::Config;
 use clap::App;
@@ -40,6 +41,13 @@ fn run() -> Result<()> {
         }
     } else {
         println!("config file not found at {:?}", config_path);
+
+        if helpers::confirm("do you want to create it?")? {
+            helpers::create_config_file(&config_path)?;
+            run()? // re run the whole thing
+        } else {
+            process::exit(2);
+        }
         Ok(())
     }
 }
