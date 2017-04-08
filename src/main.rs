@@ -8,7 +8,6 @@ use std::io;
 #[macro_use]
 mod git;
 mod author;
-mod concat;
 mod author_selection;
 mod error;
 mod commands;
