@@ -116,4 +116,18 @@ impl<'a> Config<'a> {
         }).collect();
         AuthorSelection::new(self, authors?)
     }
+
+    pub fn remove_author(&self, nick: &str) -> Result<()> {
+        let section_name = format!("author.{}", nick);
+        let mut command = self.command();
+
+        // trying to remove a section that doesn't exist fails ungracefully, so check whether author exists first.
+        if let Ok(_) = self.find_authors(&[nick]) {
+            read_result(command.arg("--remove-section").arg(&section_name))?;
+        } else {
+            // probably already removed, do nothing
+        }
+
+        Ok(())
+    }
 }

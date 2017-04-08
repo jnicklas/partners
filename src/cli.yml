@@ -28,3 +28,8 @@ subcommands:
             help: the email address of the new author
             long: email
             takes_value: true
+  - delete:
+      about: remove an author
+      args:
+        - nick:
+            help: nickname of the author you wish to remove

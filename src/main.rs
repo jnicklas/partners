@@ -43,6 +43,7 @@ fn run() -> Result<()> {
         ("current", Some(sub_matches)) => commands::current(&partners_config, sub_matches),
         ("set", Some(sub_matches)) => commands::set(&partners_config, sub_matches),
         ("add", Some(sub_matches)) => commands::add(&partners_config, sub_matches),
+        ("delete", Some(sub_matches)) => commands::delete(&partners_config, sub_matches),
         _ => {
             println!("{}", matches.usage());
             Ok(())
