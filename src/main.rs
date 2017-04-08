@@ -26,17 +26,22 @@ fn run() -> Result<()> {
 
     let config_path = std::env::home_dir().ok_or(PartnersError::HomeDirectoryNotFound)?.join(".partners.cfg");
 
-    let partners_config = Config::File(&config_path);
+    if config_path.exists() {
+        let partners_config = Config::File(&config_path);
 
-    match matches.subcommand() {
-        ("list", Some(sub_matches)) => commands::list(&partners_config, sub_matches),
-        ("current", Some(sub_matches)) => commands::current(&partners_config, sub_matches),
-        ("set", Some(sub_matches)) => commands::set(&partners_config, sub_matches),
-        ("add", Some(sub_matches)) => commands::add(&partners_config, sub_matches),
-        _ => {
-            println!("{}", matches.usage());
-            Ok(())
+        match matches.subcommand() {
+            ("list", Some(sub_matches)) => commands::list(&partners_config, sub_matches),
+            ("current", Some(sub_matches)) => commands::current(&partners_config, sub_matches),
+            ("set", Some(sub_matches)) => commands::set(&partners_config, sub_matches),
+            ("add", Some(sub_matches)) => commands::add(&partners_config, sub_matches),
+            _ => {
+                println!("{}", matches.usage());
+                Ok(())
+            }
         }
+    } else {
+        println!("config file not found at {:?}", config_path);
+        Ok(())
     }
 }
 
