@@ -3,6 +3,7 @@ use std::path::Path;
 use PartnersError;
 use author::Author;
 use author_selection::AuthorSelection;
+use Result;
 
 #[derive(Debug)]
 pub enum Config<'a> {
@@ -11,7 +12,7 @@ pub enum Config<'a> {
     Local,
 }
 
-fn read_result(command: &mut Command) -> Result<String, PartnersError> {
+fn read_result(command: &mut Command) -> Result<String> {
     let result = command.output()?;
 
     if result.status.success() {
@@ -34,13 +35,13 @@ impl<'a> Config<'a> {
         command
     }
 
-    fn get(&self, key: &str) -> Result<String, PartnersError> {
+    fn get(&self, key: &str) -> Result<String> {
         let mut command = self.command();
 
         read_result(command.arg(key))
     }
 
-    fn set(&self, key: &str, value: &str) -> Result<(), PartnersError> {
+    fn set(&self, key: &str, value: &str) -> Result<()> {
         let mut command = self.command();
 
         read_result(command.arg(key).arg(value))?;
@@ -48,7 +49,7 @@ impl<'a> Config<'a> {
         Ok(())
     }
 
-    fn list(&self, keyexp: &str) -> Result<Vec<String>, PartnersError> {
+    fn list(&self, keyexp: &str) -> Result<Vec<String>> {
         let mut command = self.command();
 
         let string = read_result(command.arg("--get-regexp").arg(keyexp))?;
@@ -68,7 +69,7 @@ impl<'a> Config<'a> {
         self.get("config.separator").unwrap_or_else(|_| "+".to_string())
     }
 
-    pub fn authors(&self) -> Result<Vec<Author>, PartnersError> {
+    pub fn authors(&self) -> Result<Vec<Author>> {
         let lines = self.list("author.\\w+.name")?;
         lines.iter().map(|line| {
             let mut parts = line.splitn(2, ' ');
@@ -81,7 +82,7 @@ impl<'a> Config<'a> {
         }).collect()
     }
 
-    pub fn add_author(&self, author: &Author) -> Result<(), PartnersError> {
+    pub fn add_author(&self, author: &Author) -> Result<()> {
         self.set(&format!("author.{}.name", author.nick), &author.name)?;
         
         if let Some(ref email) = author.email {
@@ -90,14 +91,14 @@ impl<'a> Config<'a> {
         Ok(())
     }
 
-    pub fn set_current_author(&self, current: &AuthorSelection) -> Result<(), PartnersError> {
+    pub fn set_current_author(&self, current: &AuthorSelection) -> Result<()> {
         self.set("partners.current", &current.nick())?;
         self.set("user.name", &current.name())?;
         self.set("user.email", &current.email())?;
         Ok(())
     }
 
-    pub fn current_author(&self) -> Result<Author, PartnersError> {
+    pub fn current_author(&self) -> Result<Author> {
         let nick = self.get("partners.current").map_err(|_| PartnersError::NoGitNick)?;
         let name = self.get("user.name").map_err(|_| PartnersError::NoGitName)?;
         let email = self.get("user.email").ok();

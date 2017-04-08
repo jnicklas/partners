@@ -1,6 +1,7 @@
 use git::Config;
 use author::Author;
-use super::PartnersError;
+use error::PartnersError;
+use Result;
 
 pub struct AuthorSelection<'a> {
     config: &'a Config<'a>,
@@ -8,7 +9,7 @@ pub struct AuthorSelection<'a> {
 }
 
 impl<'a> AuthorSelection<'a> {
-    pub fn new(config: &'a Config<'a>, authors: &'a [Author]) -> Result<AuthorSelection<'a>, PartnersError> {
+    pub fn new(config: &'a Config<'a>, authors: &'a [Author]) -> Result<AuthorSelection<'a>> {
         if authors.len() == 0 {
             Err(PartnersError::NoAuthorSpecified)
         } else {
