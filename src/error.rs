@@ -13,5 +13,7 @@ use std::io;
     #[error(msg_embedded, non_std, no_from)]
     GitError(String),
     IoError(io::Error),
-    UTF8Error(::std::string::FromUtf8Error)
+    UTF8Error(::std::string::FromUtf8Error),
+
+    CannotProcede
 }

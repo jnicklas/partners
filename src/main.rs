@@ -26,35 +26,36 @@ fn run() -> Result<()> {
 
     let config_path = std::env::home_dir().ok_or(PartnersError::HomeDirectoryNotFound)?.join(".partners.cfg");
 
-    if config_path.exists() {
-        let partners_config = Config::File(&config_path);
-
-        match matches.subcommand() {
-            ("list", Some(sub_matches)) => commands::list(&partners_config, sub_matches),
-            ("current", Some(sub_matches)) => commands::current(&partners_config, sub_matches),
-            ("set", Some(sub_matches)) => commands::set(&partners_config, sub_matches),
-            ("add", Some(sub_matches)) => commands::add(&partners_config, sub_matches),
-            _ => {
-                println!("{}", matches.usage());
-                Ok(())
-            }
-        }
-    } else {
+    if !config_path.exists() {
         println!("config file not found at {:?}", config_path);
 
         if helpers::confirm("do you want to create it?")? {
             helpers::create_config_file(&config_path)?;
-            run()? // re run the whole thing
         } else {
-            process::exit(2);
+            Err(PartnersError::CannotProcede)?;
         }
-        Ok(())
+    }
+
+    let partners_config = Config::File(&config_path);
+
+    match matches.subcommand() {
+        ("list", Some(sub_matches)) => commands::list(&partners_config, sub_matches),
+        ("current", Some(sub_matches)) => commands::current(&partners_config, sub_matches),
+        ("set", Some(sub_matches)) => commands::set(&partners_config, sub_matches),
+        ("add", Some(sub_matches)) => commands::add(&partners_config, sub_matches),
+        _ => {
+            println!("{}", matches.usage());
+            Ok(())
+        }
     }
 }
 
 fn main() {
     match run() {
         Ok(_) => {},
+        Err(PartnersError::CannotProcede) => {
+            process::exit(2);
+        },
         Err(e) => {
             writeln!(&mut io::stderr(), "ERROR: {}", e).unwrap();
             process::exit(1);
