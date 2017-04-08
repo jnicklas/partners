@@ -5,11 +5,11 @@ use Result;
 
 pub struct AuthorSelection<'a> {
     config: &'a Config<'a>,
-    authors: &'a [Author],
+    authors: Vec<Author>,
 }
 
 impl<'a> AuthorSelection<'a> {
-    pub fn new(config: &'a Config<'a>, authors: &'a [Author]) -> Result<AuthorSelection<'a>> {
+    pub fn new(config: &'a Config<'a>, authors: Vec<Author>) -> Result<AuthorSelection<'a>> {
         if authors.len() == 0 {
             Err(PartnersError::NoAuthorSpecified)
         } else {

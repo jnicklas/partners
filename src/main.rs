@@ -14,7 +14,7 @@ mod error;
 mod commands;
 
 use git::Config;
-use clap::{App};
+use clap::App;
 use error::PartnersError;
 
 pub type Result<T, E=PartnersError> = ::std::result::Result<T, E>;

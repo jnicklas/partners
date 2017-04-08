@@ -105,4 +105,15 @@ impl<'a> Config<'a> {
 
         Ok(Author { nick, name, email })
     }
+
+    pub fn find_authors(&'a self, nicks: &[&str]) -> Result<AuthorSelection<'a>> {
+        let authors = self.authors()?;
+        let authors: Result<Vec<Author>> = nicks.iter().map(|nick| {
+            match authors.iter().find(|a| &a.nick == nick) {
+                Some(author) => Ok(author.clone()),
+                None => Err(PartnersError::AuthorNotFound(format!("unable to find author with nick: {}", nick)))
+            }
+        }).collect();
+        AuthorSelection::new(self, authors?)
+    }
 }
