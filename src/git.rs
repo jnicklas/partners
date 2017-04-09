@@ -103,7 +103,7 @@ impl<'a> Config<'a> {
         let name = self.get("user.name").map_err(|_| PartnersError::NoGitName)?;
         let email = self.get("user.email").ok();
 
-        Ok(Author { nick, name, email })
+        Ok(Author { nick: nick, name: name, email: email })
     }
 
     pub fn find_authors(&'a self, nicks: &[&str]) -> Result<AuthorSelection<'a>> {

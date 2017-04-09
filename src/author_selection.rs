@@ -13,7 +13,7 @@ impl<'a> AuthorSelection<'a> {
         if authors.len() == 0 {
             Err(PartnersError::NoAuthorSpecified)
         } else {
-            Ok(AuthorSelection { config, authors })
+            Ok(AuthorSelection { config: config, authors: authors })
         }
     }
 
