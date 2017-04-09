@@ -31,6 +31,7 @@ fn run() -> Result<()> {
 
         if helpers::confirm("do you want to create it?")? {
             helpers::create_config_file(&config_path)?;
+            commands::setup(&Config::File(&config_path), None)?;
         } else {
             Err(PartnersError::CannotProcede)?;
         }
@@ -44,6 +45,7 @@ fn run() -> Result<()> {
         ("set", Some(sub_matches)) => commands::set(&partners_config, sub_matches),
         ("add", Some(sub_matches)) => commands::add(&partners_config, sub_matches),
         ("delete", Some(sub_matches)) => commands::delete(&partners_config, sub_matches),
+        ("setup", Some(sub_matches)) => commands::setup(&partners_config, Some(sub_matches)),
         _ => {
             println!("{}", matches.usage());
             Ok(())

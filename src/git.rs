@@ -61,12 +61,24 @@ impl<'a> Config<'a> {
         self.get("config.domain").unwrap_or_else(|_| "example.com".to_string())
     }
 
-    pub fn prefix(&self) -> String {          
+    pub fn prefix(&self) -> String {
         self.get("config.prefix").unwrap_or_else(|_| "dev".to_string())
     }
 
-    pub fn separator(&self) -> String { 
+    pub fn separator(&self) -> String {
         self.get("config.separator").unwrap_or_else(|_| "+".to_string())
+    }
+
+    pub fn set_domain(&self, value: &str) -> Result<()> {
+        self.set("config.domain", value)
+    }
+
+    pub fn set_prefix(&self, value: &str) -> Result<()> {
+        self.set("config.prefix", value)
+    }
+
+    pub fn set_separator(&self, value: &str) -> Result<()> {
+        self.set("config.separator", value)
     }
 
     pub fn authors(&self) -> Result<Vec<Author>> {
@@ -84,7 +96,7 @@ impl<'a> Config<'a> {
 
     pub fn add_author(&self, author: &Author) -> Result<()> {
         self.set(&format!("author.{}.name", author.nick), &author.name)?;
-        
+
         if let Some(ref email) = author.email {
             self.set(&format!("author.{}.email", author.nick), email)?;
         }

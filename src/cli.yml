@@ -33,3 +33,18 @@ subcommands:
       args:
         - nick:
             help: nickname of the author you wish to remove
+  - setup:
+      about: run an interactive setup
+      args:
+        - prefix:
+            help: when generating an email address for multiple authors, use this prefix
+            long: prefix
+            takes_value: true
+        - domain:
+            help: when generating an email, use this domain
+            long: domain
+            takes_value: true
+        - separator:
+            help: separate multiple nicks with this separator, should be valid in an email address
+            long: separator
+            takes_value: true
