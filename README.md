@@ -22,30 +22,66 @@ All other alternatives we could find seem to be incomplete or unmaintained.
 
 ## Installation
 
-First, install Rust and Cargo. You can use the Rustup script, see [here](https://www.rust-lang.org/downloads.html), or on OS X you can simply install them via Homebrew like this:
+First, install Rust and Cargo. You can use [rustup](https://www.rust-lang.org/install.html),
+or on OS X you can simply install them via Homebrew like this:
 
 ``` sh
-brew install rust
+$ brew install rust
 ```
 
 Now install Partners via Cargo:
 
 ``` sh
-cargo install partners
+$ cargo install partners
 ```
 
 It might prompt you to add Cargo's install directory to your path.
 
-Partners is unfortunately still lacking an interactive setup method. Copy the
-example into your home directory:
+Now run partners' interactive setup:
 
 ``` sh
-cp default.cfg ~/.partners.cfg
+$ partners setup
 ```
 
-You can examine this file, you'll probably want to change the domain.
+This will prompt you to create the configuration file if it doesn't exist.
 
 ## Usage
 
+Partners maintains a list of authors it knows about, you can inspect this list by running:
 
+``` sh
+$ partners list
+```
 
+You can add a new author by running:
+
+``` sh
+$ partners add
+```
+
+This will prompt you for their nickname, name and email address. You can use
+the nickname to quickly change your git author information like this:
+
+``` sh
+$ partners set jonas
+jonas:
+  Name:  Jonas Nicklas
+  Email: jonas.nicklas@gmail.com
+```
+
+Where `jonas` is the nickname. You can also use multiple nicknames:
+
+``` sh
+$ partners set jonas kim
+jonas+kim:
+  Name:  Jonas Nicklas, Kim Burgestrand
+  Email: dev+jonas+kim@elabs.se
+```
+
+In the case of multiple authors, partners constructs the email address based
+on the authors' nicknames, and the domain, prefix and separator configuration
+parameters specified during setup. You can change these any time by running:
+
+``` sh
+partners setup
+```
