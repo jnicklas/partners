@@ -69,6 +69,18 @@ impl<'a> Config<'a> {
         self.get("config.separator").unwrap_or_else(|_| "+".to_string())
     }
 
+    pub fn nick(&self) -> Result<String> {
+        self.get("partners.current")
+    }
+
+    pub fn user_name(&self) -> Result<String> {
+        self.get("user.name")
+    }
+
+    pub fn user_email(&self) -> Result<String> {
+        self.get("user.email")
+    }
+
     pub fn set_domain(&self, value: &str) -> Result<()> {
         self.set("config.domain", value)
     }
@@ -111,11 +123,15 @@ impl<'a> Config<'a> {
     }
 
     pub fn current_author(&self) -> Result<Author> {
-        let nick = self.get("partners.current").map_err(|_| PartnersError::NoGitNick)?;
-        let name = self.get("user.name").map_err(|_| PartnersError::NoGitName)?;
-        let email = self.get("user.email").ok();
+        let nick = self.nick().map_err(|_| PartnersError::NoGitNick)?;
+        let name = self.user_name().map_err(|_| PartnersError::NoGitName)?;
+        let email = self.user_email().ok();
 
         Ok(Author { nick: nick, name: name, email: email })
+    }
+
+    pub fn find_author(&'a self, nick: &str) -> Option<Author> {
+        self.authors().ok().and_then(|val| val.into_iter().find(|a| &a.nick == nick))
     }
 
     pub fn find_authors(&'a self, nicks: &[&str]) -> Result<AuthorSelection<'a>> {

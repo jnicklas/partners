@@ -13,7 +13,6 @@ mod error;
 mod commands;
 mod helpers;
 
-use git::Config;
 use clap::App;
 use error::PartnersError;
 
@@ -26,18 +25,7 @@ fn run() -> Result<()> {
 
     let config_path = std::env::home_dir().ok_or(PartnersError::HomeDirectoryNotFound)?.join(".partners.cfg");
 
-    if !config_path.exists() {
-        println!("config file not found at {:?}", config_path);
-
-        if helpers::confirm("do you want to create it?")? {
-            helpers::create_config_file(&config_path)?;
-            commands::setup(&Config::File(&config_path), None)?;
-        } else {
-            Err(PartnersError::CannotProcede)?;
-        }
-    }
-
-    let partners_config = Config::File(&config_path);
+    let partners_config = commands::initial(&config_path)?;
 
     match matches.subcommand() {
         ("list", Some(sub_matches)) => commands::list(&partners_config, sub_matches),
@@ -45,7 +33,7 @@ fn run() -> Result<()> {
         ("set", Some(sub_matches)) => commands::set(&partners_config, sub_matches),
         ("add", Some(sub_matches)) => commands::add(&partners_config, sub_matches),
         ("delete", Some(sub_matches)) => commands::delete(&partners_config, sub_matches),
-        ("setup", Some(sub_matches)) => commands::setup(&partners_config, Some(sub_matches)),
+        ("setup", Some(sub_matches)) => commands::setup(&partners_config, sub_matches),
         _ => {
             println!("{}", matches.usage());
             Ok(())
