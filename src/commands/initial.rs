@@ -22,6 +22,8 @@ pub fn initial(config_path: &Path) -> Result<Config> {
     let author = match Config::Local.current_author() {
         Ok(author) => author,
         Err(_) => {
+            println!("It seems like the current git author is not known to partners");
+
             let nick = Config::Local.nick().or_else(|_| {
                 println!("Please enter a nickname you would like to use");
                 helpers::query_required("Nick")
