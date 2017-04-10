@@ -14,15 +14,6 @@ pub fn initial(config_path: &Path) -> Result<Config> {
 
         if helpers::confirm("do you want to create it?")? {
             helpers::create_config_file(&config_path)?;
-
-            let domain = helpers::query_with_default("Email Domain", &partners_config.domain())?;
-            partners_config.set_domain(&domain)?;
-
-            let prefix = helpers::query_with_default("Email Prefix", &partners_config.prefix())?;
-            partners_config.set_prefix(&prefix)?;
-
-            let separator = helpers::query_with_default("Separator", &partners_config.separator())?;
-            partners_config.set_separator(&separator)?;
         } else {
             Err(PartnersError::CannotProcede)?;
         }
