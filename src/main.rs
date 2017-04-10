@@ -1,6 +1,7 @@
 #[macro_use] extern crate clap;
 #[macro_use] extern crate derive_error;
 extern crate termion;
+extern crate xdg;
 
 use std::process;
 use std::io::{self, Write};
@@ -15,6 +16,7 @@ mod helpers;
 
 use clap::App;
 use error::PartnersError;
+use xdg::BaseDirectories;
 
 pub type Result<T, E=PartnersError> = ::std::result::Result<T, E>;
 
@@ -23,7 +25,9 @@ fn run() -> Result<()> {
     let app = App::from_yaml(yaml).version(crate_version!()).author(crate_authors!());
     let matches = app.get_matches();
 
-    let config_path = std::env::home_dir().ok_or(PartnersError::HomeDirectoryNotFound)?.join(".partners.cfg");
+    let xdg_dirs = BaseDirectories::with_prefix("partners")?;
+
+    let config_path = xdg_dirs.place_config_file("partners.cfg")?;
 
     let partners_config = commands::initial(&config_path)?;
 
