@@ -16,7 +16,6 @@ mod helpers;
 
 use clap::App;
 use error::PartnersError;
-use xdg::BaseDirectories;
 
 pub type Result<T, E=PartnersError> = ::std::result::Result<T, E>;
 
@@ -25,11 +24,7 @@ fn run() -> Result<()> {
     let app = App::from_yaml(yaml).version(crate_version!()).author(crate_authors!());
     let matches = app.get_matches();
 
-    let xdg_dirs = BaseDirectories::with_prefix("partners")?;
-
-    let config_path = xdg_dirs.place_config_file("partners.cfg")?;
-
-    let partners_config = commands::initial(&config_path)?;
+    let partners_config = commands::initial()?;
 
     match matches.subcommand() {
         ("list", Some(sub_matches)) => commands::list(&partners_config, sub_matches),

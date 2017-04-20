@@ -4,12 +4,12 @@ use error::PartnersError;
 use Result;
 
 pub struct AuthorSelection<'a> {
-    config: &'a Config<'a>,
+    config: &'a Config,
     authors: Vec<Author>,
 }
 
 impl<'a> AuthorSelection<'a> {
-    pub fn new(config: &'a Config<'a>, mut authors: Vec<Author>) -> Result<AuthorSelection<'a>> {
+    pub fn new(config: &'a Config, mut authors: Vec<Author>) -> Result<AuthorSelection<'a>> {
         if authors.len() == 0 {
             Err(PartnersError::NoAuthorSpecified)
         } else {

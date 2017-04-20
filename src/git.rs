@@ -1,13 +1,13 @@
 use std::process::{Command};
-use std::path::Path;
+use std::path::PathBuf;
 use PartnersError;
 use author::Author;
 use author_selection::AuthorSelection;
 use Result;
 
 #[derive(Debug)]
-pub enum Config<'a> {
-    File(&'a Path),
+pub enum Config {
+    File(PathBuf),
     Global,
     Local,
 }
@@ -24,7 +24,7 @@ fn read_result(command: &mut Command) -> Result<String> {
     }
 }
 
-impl<'a> Config<'a> {
+impl<'a> Config {
     fn command(&self) -> Command {
         let mut command = Command::new("git");
         match *self {

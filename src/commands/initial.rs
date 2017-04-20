@@ -1,13 +1,15 @@
-use std::path::Path;
 use git::Config;
 use helpers;
 use error::PartnersError;
 use author::Author;
 use author_selection::AuthorSelection;
+use xdg::BaseDirectories;
 use Result;
 
-pub fn initial(config_path: &Path) -> Result<Config> {
-    let partners_config = Config::File(config_path);
+pub fn initial() -> Result<Config> {
+    let xdg_dirs = BaseDirectories::with_prefix("partners")?;
+
+    let config_path = xdg_dirs.place_config_file("partners.cfg")?;
 
     if !config_path.exists() {
         println!("config file not found at {:?}", config_path);
@@ -18,6 +20,8 @@ pub fn initial(config_path: &Path) -> Result<Config> {
             Err(PartnersError::CannotProcede)?;
         }
     }
+
+    let partners_config = Config::File(config_path);
 
     let author = match Config::Local.current_author() {
         Ok(author) => author,
