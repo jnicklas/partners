@@ -1,23 +1,24 @@
 #[macro_use] extern crate clap;
-#[macro_use] extern crate derive_error;
 extern crate termion;
 extern crate xdg;
+#[macro_use] extern crate failure;
 
 use std::process;
-use std::io::{self, Write};
 
 #[macro_use]
 mod git;
 mod author;
 mod author_selection;
-mod error;
 mod commands;
 mod helpers;
 
 use clap::App;
-use error::PartnersError;
 
-pub type Result<T, E=PartnersError> = ::std::result::Result<T, E>;
+pub type Result<T, E=::failure::Error> = ::std::result::Result<T, E>;
+
+#[derive(Debug, Fail)]
+#[fail(display = "cannot procede")]
+pub struct CannotProcede;
 
 fn run() -> Result<()> {
     let yaml = load_yaml!("cli.yml");
@@ -43,12 +44,14 @@ fn run() -> Result<()> {
 fn main() {
     match run() {
         Ok(_) => {},
-        Err(PartnersError::CannotProcede) => {
-            process::exit(2);
-        },
-        Err(e) => {
-            writeln!(&mut io::stderr(), "ERROR: {}", e).unwrap();
-            process::exit(1);
+        Err(error) => {
+            match error.downcast::<CannotProcede>() {
+                Ok(_) => process::exit(2),
+                Err(error) => {
+                    eprintln!("ERROR: {}", error);
+                    process::exit(1);
+                }
+            }
         }
     }
 }

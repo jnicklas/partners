@@ -1,7 +1,10 @@
 use git::Config;
 use author::Author;
-use error::PartnersError;
 use Result;
+
+#[derive(Debug, Fail)]
+#[fail(display = "no author specified")]
+struct NoAuthorSpecified;
 
 pub struct AuthorSelection<'a> {
     config: &'a Config,
@@ -11,7 +14,7 @@ pub struct AuthorSelection<'a> {
 impl<'a> AuthorSelection<'a> {
     pub fn new(config: &'a Config, mut authors: Vec<Author>) -> Result<AuthorSelection<'a>> {
         if authors.len() == 0 {
-            Err(PartnersError::NoAuthorSpecified)
+            Err(NoAuthorSpecified)?
         } else {
             authors.sort();
             Ok(AuthorSelection { config: config, authors: authors })

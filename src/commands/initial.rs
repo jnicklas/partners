@@ -1,10 +1,10 @@
 use git::Config;
 use helpers;
-use error::PartnersError;
 use author::Author;
 use author_selection::AuthorSelection;
 use xdg::BaseDirectories;
 use Result;
+use CannotProcede;
 
 pub fn initial() -> Result<Config> {
     let xdg_dirs = BaseDirectories::with_prefix("partners")?;
@@ -17,7 +17,7 @@ pub fn initial() -> Result<Config> {
         if helpers::confirm("do you want to create it?")? {
             helpers::create_config_file(&config_path)?;
         } else {
-            Err(PartnersError::CannotProcede)?;
+            Err(CannotProcede)?;
         }
     }
 

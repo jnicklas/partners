@@ -1,9 +1,24 @@
 use std::process::{Command};
 use std::path::PathBuf;
-use PartnersError;
 use author::Author;
 use author_selection::AuthorSelection;
 use Result;
+
+#[derive(Debug, Fail)]
+#[fail(display = "git error: {}", message)]
+struct GitError { message: String }
+
+#[derive(Debug, Fail)]
+#[fail(display = "nick name is not defined in config file")]
+struct NoGitNick;
+
+#[derive(Debug, Fail)]
+#[fail(display = "name is not defined in config file")]
+struct NoGitName;
+
+#[derive(Debug, Fail)]
+#[fail(display = "unable to find author with nick: {}", nick)]
+struct AuthorNotFound { nick: String }
 
 #[derive(Debug)]
 pub enum Config {
@@ -20,7 +35,7 @@ fn read_result(command: &mut Command) -> Result<String> {
         Ok(string.trim().to_string())
     } else {
         let string = String::from_utf8(result.stderr)?;
-        Err(PartnersError::GitError(string))
+        Err(GitError { message: string })?
     }
 }
 
@@ -123,8 +138,8 @@ impl<'a> Config {
     }
 
     pub fn current_author(&self) -> Result<Author> {
-        let nick = self.nick().map_err(|_| PartnersError::NoGitNick)?;
-        let name = self.user_name().map_err(|_| PartnersError::NoGitName)?;
+        let nick = self.nick().map_err(|_| NoGitNick)?;
+        let name = self.user_name().map_err(|_| NoGitName)?;
         let email = self.user_email().ok();
 
         Ok(Author { nick: nick, name: name, email: email })
@@ -136,10 +151,10 @@ impl<'a> Config {
 
     pub fn find_authors(&'a self, nicks: &[&str]) -> Result<AuthorSelection<'a>> {
         let authors = self.authors()?;
-        let authors: Result<Vec<Author>> = nicks.iter().map(|nick| {
+        let authors: Result<Vec<Author>, AuthorNotFound> = nicks.iter().map(|nick| {
             match authors.iter().find(|a| &a.nick == nick) {
                 Some(author) => Ok(author.clone()),
-                None => Err(PartnersError::AuthorNotFound(format!("unable to find author with nick: {}", nick)))
+                None => Err(AuthorNotFound { nick: String::from(*nick) })
             }
         }).collect();
         AuthorSelection::new(self, authors?)
